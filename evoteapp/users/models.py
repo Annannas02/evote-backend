@@ -5,6 +5,7 @@ from django.core.validators import MaxLengthValidator, MinLengthValidator
 
 class User(AbstractBaseUser):
     reg_date = models.DateField(auto_now=True)
+    token = models.CharField(unique=True, max_length=8)
     idnp = models.PositiveIntegerField(unique=True, validators=[MinLengthValidator(limit_value=13), MaxLengthValidator(limit_value=13)])
     phone = PhoneNumberField(null=False, blank=False, unique=True)
     last_login = models.DateField()
