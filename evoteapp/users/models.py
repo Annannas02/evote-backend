@@ -4,11 +4,13 @@ from django.contrib.auth.models import AbstractBaseUser
 from django.core.validators import MaxLengthValidator, MinLengthValidator
 
 class User(AbstractBaseUser):
-    reg_date = models.DateField(auto_now=True)
-    token = models.CharField(unique=True, max_length=8)
     idnp = models.PositiveIntegerField(unique=True, validators=[MinLengthValidator(limit_value=13), MaxLengthValidator(limit_value=13)])
-    phone = PhoneNumberField(null=False, blank=False, unique=True)
-    last_login = models.DateField()
-    is_staff = models.BooleanField(default=False)
+    got_token = models.BooleanField()
+    date_generate_token=models.DateField()
 
+    phone = PhoneNumberField(null=False, blank=False, unique=True)
+    secret = models.CharField()
+    #last_login = models.DateField()
+    #is_staff = models.BooleanField(default=False)
+    
     USERNAME_FIELD = 'phone'

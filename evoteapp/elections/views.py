@@ -1,3 +1,8 @@
-from django.shortcuts import render
+from rest_framework import generics
+from elections import models, serializers
 
-# Create your views here.
+
+class ElectionsList(generics.ListCreateAPIView):
+    
+    queryset = models.Elections.objects.all()
+    serializer_class = serializers.ElectionSerializer
