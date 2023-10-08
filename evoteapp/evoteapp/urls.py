@@ -19,6 +19,11 @@ from django.urls import path, include
 
 urlpatterns = [
     path('api/', include([
-        path('users/', include('users.urls'))
+        path('users/', include('users.urls')),        
+        path('authen/', include('authen.urls')),
+        path('tokens/', include('tokens.urls')),
+        path('elections/', include('elections.urls')),
+        path('electionchoice/', include('electionchoice.urls')),
+        path('electionhistory/', include('electionhistory.urls'))
     ]))
 ]

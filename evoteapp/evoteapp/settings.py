@@ -42,9 +42,10 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'users',
     'elections',
-    'auth',
-    'twofactor',
-    'tokens'
+    'authen',
+    'tokens',
+    'electionchoice',
+    'electionhistory'
 ]
 
 MIDDLEWARE = [
@@ -77,7 +78,7 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'evoteapp.wsgi.application'
 
-
+SENDSMS_BACKEND = 'myapp.mysmsbackend.SmsBackend'
 # Database
 # https://docs.djangoproject.com/en/4.2/ref/settings/#databases
 

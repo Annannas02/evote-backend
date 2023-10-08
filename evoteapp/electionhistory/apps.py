@@ -1,6 +1,6 @@
 from django.apps import AppConfig
 
 
-class TwofactorConfig(AppConfig):
+class ElectionhistoryConfig(AppConfig):
     default_auto_field = 'django.db.models.BigAutoField'
-    name = 'twofactor'
+    name = 'electionhistory'

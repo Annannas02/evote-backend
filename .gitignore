@@ -1,4 +1,5 @@
 .venv/
+env/
 
 *.pyc
 __pycache__/
@@ -17,23 +18,7 @@ build/
 *.pot
 *.pyc
 __pycache__
+migrations/
 media
 
 *.bak 
-
-.idea/**/workspace.xml
-.idea/**/tasks.xml
-.idea/**/usage.statistics.xml
-.idea/**/dictionaries
-.idea/**/shelf
-
-.idea/**/aws.xml
-
-.idea/**/contentModel.xml
-
-.idea/**/dataSources/
-.idea/**/dataSources.ids
-.idea/**/dataSources.local.xml
-.idea/**/sqlDataSources.xml
-.idea/**/dynamic.xml
-.idea/**/ui
