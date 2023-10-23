@@ -29,7 +29,6 @@ DEBUG = True
 ALLOWED_HOSTS = []
 
 SETTINGS_PATH = os.path.dirname(os.path.dirname(__file__))
-AUTH_USER_MODEL = 'users.User'
 # Application definition
 
 INSTALLED_APPS = [
@@ -45,7 +44,8 @@ INSTALLED_APPS = [
     'authen',
     'tokens',
     'electionchoice',
-    'electionhistory'
+    'electionhistory',
+    'otp'
 ]
 
 MIDDLEWARE = [
