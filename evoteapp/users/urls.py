@@ -3,4 +3,5 @@ from users import views
 
 urlpatterns = [
     path('user-list/', views.UserList.as_view()),
+    path('authenticated-user/', views.get_authenticated_user)
 ]

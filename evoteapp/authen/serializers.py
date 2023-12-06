@@ -1,14 +1,15 @@
 from rest_framework import serializers
 from users import models
 from django.contrib.auth import hashers
-from phonenumber_field.phonenumber import PhoneNumber
+from phonenumber_field.serializerfields import PhoneNumberField
 from users.serializers import UserSerializer
 import pyotp
+from django.utils import timezone  # Import timezone
 
 
 class RegisterUserSerializer(serializers.Serializer):
     idnp = serializers.CharField()
-    phone = PhoneNumber() # Use PhoneNumberField for phone input
+    phone= PhoneNumberField() # Use PhoneNumberField for phone input
 
     """ future validation through official idnp list
     def validate(self, attrs):
@@ -22,10 +23,13 @@ class RegisterUserSerializer(serializers.Serializer):
         # Hash the idnp value before saving
         hashed_idnp = hashers.make_password(validated_data['idnp'])
         secret = pyotp.random_base32()
-        user = models.User.objects.create(idnp=hashed_idnp, phone=validated_data['phone'], secret=validated_data['secret'])
+        current_timestamp = timezone.now()
+        
+        user = models.User.objects.create(
+            idnp=hashed_idnp,
+            phone=validated_data['phone'],
+            secret=secret,
+            date_generate_token=current_timestamp  # Set the current timestamp
+        )
         return user
-
-
-
-
-    
+        

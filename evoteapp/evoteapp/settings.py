@@ -48,6 +48,8 @@ INSTALLED_APPS = [
     'otp'
 ]
 
+JWT_SECRET="M3ljN0IzPmgvaWhrZGRDXCpYMzkjWC0="
+
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
