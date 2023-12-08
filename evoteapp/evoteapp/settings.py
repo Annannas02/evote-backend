@@ -10,6 +10,7 @@ For the full list of settings and their values, see
 https://docs.djangoproject.com/en/4.2/ref/settings/
 """
 
+from datetime import timedelta
 from pathlib import Path
 import os
 
@@ -45,8 +46,11 @@ INSTALLED_APPS = [
     'tokens',
     'electionchoice',
     'electionhistory',
-    'otp'
+    'otp',
+    'rest_framework_simplejwt',
 ]
+
+SECRET_SALT = "pKc:t#ihYK6Id=/r"  
 
 JWT_SECRET="M3ljN0IzPmgvaWhrZGRDXCpYMzkjWC0="
 
@@ -132,3 +136,19 @@ STATIC_URL = 'static/'
 # https://docs.djangoproject.com/en/4.2/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
+AUTH_USER_MODEL = 'users.User'
+
+REST_FRAMEWORK = {
+    'DEFAULT_AUTHENTICATION_CLASSES': (
+        'rest_framework_simplejwt.authentication.JWTAuthentication',
+    ),
+}
+
+SIMPLE_JWT = {
+    "AUTH_HEADER_TYPES": ("Bearer",),
+    "AUTH_HEADER_NAME": "HTTP_AUTHORIZATION",
+    "USER_ID_FIELD": "id",
+    'ACCESS_TOKEN_LIFETIME': timedelta(minutes=1000),
+    'ALGORITHM': 'HS256',
+}

@@ -4,7 +4,7 @@ from rest_framework.decorators import api_view, authentication_classes, permissi
 from django.utils import timezone
 from authen import serializers
 from otp.models import OTP
-from evoteapp.settings import JWT_SECRET
+from evoteapp.settings import JWT_SECRET, SECRET_SALT
 from datetime import datetime, timedelta
 from users import models as usermodels
 from tokens.models import Token
@@ -16,6 +16,7 @@ import hashlib
 import random
 import datetime 
 from rest_framework.permissions import AllowAny, IsAuthenticated
+from rest_framework_simplejwt.tokens import RefreshToken
 
 #REGISTRATION
 class RegisterUserView(generics.CreateAPIView):
@@ -89,131 +90,101 @@ def authenticate_2fa(request):
 
     user = usermodels.User.objects.get(id=request.data.get("id"))
 
-    #try:
+    try:
     # Verify if the user has an associated OTP entry
-    otp_entry = OTP.objects.filter(personid=user).first()
+        otp_entry = OTP.objects.filter(personid=user).first()
 
-    if not otp_entry:
-        return Response(
-            {"error": "No OTP entry found for the user."},
-            status=status.HTTP_400_BAD_REQUEST
-        )
+        if not otp_entry:
+            return Response(
+                {"error": "No OTP entry found for the user."},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        totp = pyotp.TOTP(user.secret)
 
-    # Compare the provided OTP with the OTP associated with the timestamp in the database
-    if pyotp.TOTP.verify(self=pyotp.TOTP,otp=otp, for_time=otp_entry.timestamp):
-        print('yay')
-    else:
-        print('oh no!')
-
-
-"""
-            # If OTP is correct, create a JWT token with user ID and a 1-day expiration
-            expiration_time = datetime.utcnow() + timedelta(days=1)
-            payload = {
-                "user_id": user.id,
-                "exp": expiration_time
+        # Compare the provided OTP with the OTP associated with the timestamp in the database
+        if otp==totp.at(for_time=otp_entry.timestamp):
+            
+            refresh = RefreshToken.for_user(user=user)
+            tokens = {
+                'refresh': str(refresh),
+                'access': str(refresh.access_token),
             }
-            jwt_token = jwt.encode(payload, JWT_SECRET, algorithm='HS256')
-            cookie_value = f"Authentication={jwt_token}; HttpOnly; Path=/; Max-Age={expiration_time}"
-            # Set the JWT token in the response header
-            response = Response({"message": "Authentication successful."}, status=status.HTTP_200_OK)
-            response['Set-Cookie'] = cookie_value
-            return response
+
+            return response.Response(
+                {'tokens': tokens},
+                status=status.HTTP_202_ACCEPTED
+            )
         else:
             return Response(
                 {"error": "Invalid OTP. Authentication failed."},
                 status=status.HTTP_401_UNAUTHORIZED
-            )"""
+            )
 
-"""
+
     except Exception as e:
         return Response(
             {"error": str(e)},
             status=status.HTTP_400_BAD_REQUEST
-            
-        )"""
+        )
     
 
 #USER TOKEN GENERATION
 @api_view(['POST'])
 @permission_classes([IsAuthenticated])
 def generate_token(request):
-    user = request.user
+    try:
+        user = usermodels.User.objects.get(id=request.data.get("id"))
 
-    if user.got_token:
+        # Generate the token value as a concatenation of idnp, phone, and a secret salt
+        token_value = f"{user.idnp}{user.phone}{SECRET_SALT}"
+
+        # Calculate the MD5 hash of the token value
+        token_hash = hashlib.md5(token_value.encode()).hexdigest()
+
+        # Check if a token with the same value already exists
+        existing_token = Token.objects.filter(token_value=token_hash).first()
+
+        if user.got_token or existing_token:
+            return Response(
+                {"error": "Token already exists."},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        # Create or update the user's record to mark that they have received a token
+        usermodels.User.objects.filter(pk=user.pk).update(got_token=True, date_generate_token=timezone.now())
+
+        # Create a new token entry in the Token table
+        new_token = Token.objects.create(personid=user, token_value=token_hash, voted=False, date_voted=None)
+
+        return Response({"message": "Token generated successfully."}, status=status.HTTP_200_OK)
+    
+    except Exception as e:
         return Response(
-            {"error": "Token already exists."},
-            status=status.HTTP_400_BAD_REQUEST
+            {"error": str(e)},
+            status=status.HTTP_400_BAD_REQUEST        
         )
 
-    # Generate the token value as a concatenation of idnp, phone, and a secret salt
-    secret_salt = "pKc:t#ihYK6Id=/r"  
-    token_value = f"{user.idnp}{user.phone}{secret_salt}"
-
-    # Calculate the MD5 hash of the token value
-    token_hash = hashlib.md5(token_value.encode()).hexdigest()
-
-    # Create or update the user's record to mark that they have received a token
-    usermodels.User.objects.filter(pk=user.pk).update(got_token=True)
-
-    # Check if a token with the same value already exists
-    existing_token = Token.objects.filter(token_value=token_hash).first()
-
-    if existing_token:
-        return Response(
-            {"message": "Token already exists."},
-            status=status.HTTP_200_OK
-        )
-
-    # Create a new token entry in the Token table
-    new_token = Token.objects.create(person=user, token_value=token_hash, voted=False, date_voted=None)
-
-    return Response({"message": "Token generated successfully."}, status=status.HTTP_200_OK)
-
-@api_view(['GET'])
+@api_view(['POST'])
 @permission_classes([IsAuthenticated])
 def verify_token(request):
-    user = request.user
-
-    # Get the JWT token from the request's cookies
-    jwt_token = request.COOKIES.get('Authentication')
-
-    if not jwt_token:
-        return Response(
-            {"error": "JWT token not found."},
-            status=status.HTTP_400_BAD_REQUEST
-        )
+    user = usermodels.User.objects.get(id=request.data.get("id"))
+    token = request.data.get("token_value")
 
     try:
-        # Decode the JWT token
-        decoded_token = jwt.decode(jwt_token, JWT_SECRET, algorithms=['HS256'])
-        user_id = decoded_token['user_id']
 
-        # Verify if the decoded user_id matches the authenticated user's ID
-        if user.id == user_id:
-            # Check if the user has an associated token in the Token table
-            user_token = Token.objects.filter(person=user).first()
-
-            if user_token == request.token:
-                return Response({"message": "User token is verified."}, status=status.HTTP_200_OK)
-            else:
-                return Response(
-                    {"error": "User token wrong."},
-                    status=status.HTTP_401_UNAUTHORIZED
-                )
+        # Check if the user has an associated token in the Token table
+        user_token = Token.objects.filter(personid=user).first()
+        if user_token.token_value == token:
+            return Response({"message": "User token is verified."}, status=status.HTTP_200_OK)
         else:
             return Response(
-                {"error": "Mismatched user ID in the JWT token."},
+                {"error": "User token wrong."},
                 status=status.HTTP_401_UNAUTHORIZED
             )
 
-    except jwt.ExpiredSignatureError:
+    except Exception as e:
         return Response(
-            {"error": "JWT token has expired."},
-            status=status.HTTP_401_UNAUTHORIZED
-        )
-    except jwt.InvalidTokenError:
-        return Response(
-            {"error": "Invalid JWT token."},
-            status=status.HTTP_401_UNAUTHORIZED
+            {"error": str(e)},
+            status=status.HTTP_400_BAD_REQUEST
         )
