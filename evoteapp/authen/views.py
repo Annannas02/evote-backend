@@ -148,6 +148,12 @@ def authenticate_2fa(request):
 def generate_token(request):
     try:
         user = usermodels.User.objects.get(id=request.data.get("id"))
+        if request.user != user:
+            return Response(
+                {"error": "Unauthorized"},
+                status=status.HTTP_401_UNAUTHORIZED
+            )
+        
 
         # Generate the token value as a concatenation of idnp, phone, and a secret salt
         token_value = f"{user.idnp}{user.phone}{SECRET_SALT}"
@@ -183,6 +189,13 @@ def generate_token(request):
 @permission_classes([IsAuthenticated])
 def verify_token(request):
     user = usermodels.User.objects.get(id=request.data.get("id"))
+    if request.user != user:
+            return Response(
+                {"error": "Unauthorized"},
+                status=status.HTTP_401_UNAUTHORIZED
+            )
+        
+
     token = request.data.get("token_value")
 
     try:
