@@ -11,7 +11,7 @@ POST auth/verify-token
 """
 
 urlpatterns = [
-    path('auth/register', views.RegisterUserView.as_view()),
+    path('auth/register', views.register_user),
     path('2fa/generateOtp', views.generate_totp),
     path('2fa/authenticate', views.authenticate_2fa),
     path('auth/generate-token', views.generate_token),

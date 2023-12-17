@@ -52,7 +52,6 @@ INSTALLED_APPS = [
 
 SECRET_SALT = "pKc:t#ihYK6Id=/r"  
 
-JWT_SECRET="M3ljN0IzPmgvaWhrZGRDXCpYMzkjWC0="
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',

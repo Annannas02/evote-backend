@@ -2,9 +2,10 @@ from django.contrib.auth import hashers
 from rest_framework import generics, status, response
 from rest_framework.decorators import api_view, authentication_classes, permission_classes
 from django.utils import timezone
-from authen import serializers
 from otp.models import OTP
-from evoteapp.settings import JWT_SECRET, SECRET_SALT
+from users.serializers import UserSerializer
+from tokens.serializers import TokenSerializer
+from evoteapp.settings import SECRET_SALT
 from datetime import datetime, timedelta
 from users import models as usermodels
 from tokens.models import Token
@@ -18,12 +19,24 @@ import datetime
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework_simplejwt.tokens import RefreshToken
 
-#REGISTRATION
-class RegisterUserView(generics.CreateAPIView):
-    permission_classes = [AllowAny]
 
-    serializer_class = serializers.RegisterUserSerializer
+@api_view(['POST'])
+@permission_classes([AllowAny])
+def register_user(request):
+    idnp = request.data.get("idnp")
+    phone = request.data.get("phone")
 
+    hashed_idnp = hashers.make_password(idnp)
+    secret = pyotp.random_base32()
+    
+    user = usermodels.User.objects.create(
+        idnp=hashed_idnp,
+        phone=phone,
+        secret=secret,
+        date_generate_token=None
+    )
+    user_serialized = UserSerializer(user)
+    return Response({"message" : "User created successfully", "user": user_serialized.data}, status=status.HTTP_200_OK)
 
 #GENERATION OF TOTP
 @api_view(['POST'])
@@ -157,7 +170,8 @@ def generate_token(request):
         # Create a new token entry in the Token table
         new_token = Token.objects.create(personid=user, token_value=token_hash, voted=False, date_voted=None)
 
-        return Response({"message": "Token generated successfully."}, status=status.HTTP_200_OK)
+        token_serialized = TokenSerializer(new_token)
+        return Response({"message": "Token generated successfully.", "token" : token_serialized.data}, status=status.HTTP_200_OK)
     
     except Exception as e:
         return Response(
