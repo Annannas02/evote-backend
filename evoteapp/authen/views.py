@@ -189,15 +189,16 @@ def generate_token(request):
 @permission_classes([AllowAny])
 def verify_token(request):
 
-    user = request.user
-
     token = request.data.get("token_value")
     
     try:
 
-        # Check if the user has an associated token in the Token table
-        user_token = Token.objects.filter(personid=user).first()
-        if user_token.token_value == token:
+            # Check if the user has an associated token in the Token table
+        user_token = Token.objects.filter(token_value=token).first()
+        print(user_token.personid)
+
+        if user_token:
+            user = usermodels.User.objects.get(idnp=user_token.personid)
             user_serialized = UserSerializer(user)
             return Response({"message": "User token is verified.", "user": user_serialized.data}, status=status.HTTP_200_OK)
         else:
@@ -210,4 +211,5 @@ def verify_token(request):
         return Response(
             {"error": str(e)},
             status=status.HTTP_400_BAD_REQUEST
+            
         )
