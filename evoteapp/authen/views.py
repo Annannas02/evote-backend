@@ -148,6 +148,12 @@ def authenticate_2fa(request):
 def generate_token(request):
     try:
         user = usermodels.User.objects.get(id=request.data.get("id"))
+        if request.user != user:
+            return Response(
+                {"error": "Unauthorized"},
+                status=status.HTTP_401_UNAUTHORIZED
+            )
+        
 
         # Generate the token value as a concatenation of idnp, phone, and a secret salt
         token_value = f"{user.idnp}{user.phone}{SECRET_SALT}"
@@ -182,15 +188,18 @@ def generate_token(request):
 @api_view(['POST'])
 @permission_classes([IsAuthenticated])
 def verify_token(request):
-    user = usermodels.User.objects.get(id=request.data.get("id"))
-    token = request.data.get("token_value")
 
+    user = request.user
+
+    token = request.data.get("token_value")
+    
     try:
 
         # Check if the user has an associated token in the Token table
         user_token = Token.objects.filter(personid=user).first()
         if user_token.token_value == token:
-            return Response({"message": "User token is verified."}, status=status.HTTP_200_OK)
+            user_serialized = UserSerializer(user)
+            return Response({"message": "User token is verified.", "user": user_serialized.data}, status=status.HTTP_200_OK)
         else:
             return Response(
                 {"error": "User token wrong."},
