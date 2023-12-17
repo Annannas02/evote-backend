@@ -186,7 +186,7 @@ def generate_token(request):
         )
 
 @api_view(['POST'])
-@permission_classes([IsAuthenticated])
+@permission_classes([AllowAny])
 def verify_token(request):
 
     user = request.user
