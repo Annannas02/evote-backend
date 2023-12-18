@@ -1,12 +1,14 @@
 asgiref==3.7.2
 backports.zoneinfo==0.2.1
 Django==4.2.5
+django-cors-headers==4.3.1
 django-phonenumber-field==7.1.0
 django-sendsms==0.5
 djangorestframework==3.14.0
 djangorestframework-simplejwt==5.3.1
 httplib2==0.22.0
 phonenumbers==8.13.22
+Pillow==10.1.0
 pip==23.2.1
 PyJWT==2.8.0
 pyotp==2.9.0
