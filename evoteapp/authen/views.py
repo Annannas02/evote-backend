@@ -223,25 +223,35 @@ def verify_token(request):
 def send_sms(request):
     phone_to = request.data.get("to")
     data = request.data.get("data")
-    
     try:
-
         account_sid = os.getenv('TWILIO_ACCOUNT_SID')
         auth_token = os.getenv('TWILIO_AUTH_TOKEN')
         from_nr = os.getenv('FROM_TEL_NR')
-        print(account_sid, auth_token, from_nr)
-        # client = Client(account_sid, auth_token)
+        client = Client(account_sid, auth_token)
 
-        # message = client.messages \
-        #     .create(
-        #         body=data,
-        #         from_=from_nr,
-        #         to=phone_to
-        #     )
+        if not phone_to:
+            return Response(
+                    {"error": "Invalid phone number!"},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
 
+        if not data:
+            return Response(
+                    {"error": "Invalid message body!"},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+
+
+        message = client.messages \
+            .create(
+                body=data,
+                from_=from_nr,
+                to=phone_to
+            )
         return Response({"message": f"Sent SMS successfully to {phone_to}"}, status=status.HTTP_200_OK)
 
     except Exception as e:
+        print(e)
         return Response(
             {"error": str(e)},
             status=status.HTTP_500_INTERNAL_SERVER_ERROR
