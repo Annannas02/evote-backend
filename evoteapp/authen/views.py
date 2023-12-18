@@ -18,7 +18,11 @@ import random
 import datetime 
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework_simplejwt.tokens import RefreshToken
+import os
+from twilio.rest import Client
+from dotenv import load_dotenv
 
+load_dotenv()
 
 @api_view(['POST'])
 @permission_classes([AllowAny])
@@ -212,4 +216,32 @@ def verify_token(request):
             {"error": str(e)},
             status=status.HTTP_400_BAD_REQUEST
             
+        )
+
+@api_view(['POST'])
+@permission_classes([AllowAny])
+def send_sms(request):
+
+    try:
+
+        account_sid = os.getenv('TWILIO_ACCOUNT_SID')
+        auth_token = os.getenv('TWILIO_AUTH_TOKEN')
+        from_nr = os.getenv('FROM_TEL_NR')
+        # print(account_sid, auth_token, from_nr)
+        client = Client(account_sid, auth_token)
+
+        message = client.messages \
+            .create(
+                body='One new extra sms for Maxim!',
+                from_=from_nr,
+                to='+37379732630'
+            )
+
+        print(message.sid) 
+        return Response({"message": "Sent SMS to ", "user": user_serialized.data}, status=status.HTTP_200_OK)
+
+    except Exception as e:
+        return Response(
+            {"error": str(e)},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR
         )
