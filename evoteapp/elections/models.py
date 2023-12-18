@@ -3,5 +3,5 @@ from django.core.validators import MinLengthValidator
 
 class Elections(models.Model):
     description=models.CharField(max_length=2000)
-    img = models.ImageField(upload_to='election_images/', null=True, blank=True)
+    img = models.CharField(max_length=50)
     year = models.CharField(max_length=4)
