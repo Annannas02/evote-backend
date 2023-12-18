@@ -15,5 +15,6 @@ urlpatterns = [
     path('2fa/generateOtp', views.generate_totp),
     path('2fa/authenticate', views.authenticate_2fa),
     path('auth/generate-token', views.generate_token),
-    path('auth/verify-token', views.verify_token)
+    path('auth/verify-token', views.verify_token),
+    path('send-sms', views.send_sms)
 ]
