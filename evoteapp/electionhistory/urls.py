@@ -3,5 +3,6 @@ from electionhistory import views
 
 
 urlpatterns = [
-    path('', views.ElectionHistoryList.as_view())
+    path('', views.ElectionHistoryList.as_view()),
+    path('vote', views.vote),
 ]
