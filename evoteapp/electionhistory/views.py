@@ -2,6 +2,7 @@ from rest_framework import generics
 from elections import models as electionmodels
 from electionchoice import models as electionchoicemodel
 from tokens import models as tokenmodels
+from users import models as usermodels
 from electionhistory import models, serializers
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.response import Response
@@ -60,3 +61,27 @@ def vote(request):
 
     except Exception as e:
         return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+@api_view(['POST'])
+def set_vote_status(request):
+    try:
+        user_id = request.data.get('id')
+        voted_status = request.data.get('voted')
+
+        # Ensure the provided user ID is valid
+        user = get_object_or_404(usermodels.User, id=user_id)
+
+        # Update the vote status in the Token table
+        token = tokenmodels.Token.objects.get(personid=user)
+        if not token:
+            return Response({"error": "User doesn't have a token yet."},
+                            status=status.HTTP_404_NOT_FOUND)
+        token.voted = voted_status
+        token.save()
+
+        return Response({"message": "Vote status updated successfully."}, status=status.HTTP_200_OK)
+
+    except Exception as e:
+        return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+
