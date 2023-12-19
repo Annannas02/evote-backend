@@ -163,7 +163,7 @@ def generate_token(request):
         token_value = f"{user.idnp}{user.phone}{SECRET_SALT}"
 
         # Calculate the MD5 hash of the token value
-        token_hash = hashlib.md5(token_value.encode()).hexdigest()[:6]
+        token_hash = hashlib.md5(token_value.encode()).hexdigest()[:9]
 
         # Check if a token with the same value already exists
         existing_token = Token.objects.filter(token_value=token_hash).first()
