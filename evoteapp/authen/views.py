@@ -1,24 +1,19 @@
 from django.contrib.auth import hashers
 from django.shortcuts import get_object_or_404
-from rest_framework import generics, status, response
-from rest_framework.decorators import api_view, authentication_classes, permission_classes
 from django.utils import timezone
+from rest_framework import status, response
+from rest_framework.decorators import api_view, authentication_classes, permission_classes
+import pyotp
 from otp.models import OTP
 from users.serializers import UserSerializer
-from tokens.serializers import TokenSerializer
-from evoteapp.settings import SECRET_SALT
-from datetime import datetime, timedelta
 from users import models as usermodels
+from tokens.serializers import TokenSerializer
 from tokens.models import Token
-from textmagic.rest import TextmagicRestClient
-import pyotp
-from rest_framework.response import Response
-import jwt
-import hashlib
-import random
-import datetime 
+from datetime import timedelta
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework_simplejwt.tokens import RefreshToken
+from rest_framework.response import Response
+import hashlib
 import os
 from twilio.rest import Client
 from dotenv import load_dotenv
@@ -164,7 +159,7 @@ def generate_token(request):
 
         if not existing_token:
             # If no token entry exists, create a new one
-            token_value = f"{user.idnp}{user.phone}{SECRET_SALT}"
+            token_value = f'{user.idnp}{user.phone}{os.getenv("SECRET_SALT")}'
             token_hash = hashlib.md5(token_value.encode()).hexdigest()[:9]
             new_token = Token.objects.create(personid=user, token_value=token_hash, creation_date=timezone.now())
             
@@ -175,7 +170,7 @@ def generate_token(request):
             thirty_days_ago = timezone.now() - timedelta(days=30)
             if existing_token.creation_date < thirty_days_ago:
                 # If 30 days have passed, create a new token and update the timestamp
-                token_value = f"{user.idnp}{user.phone}{SECRET_SALT}"
+                token_value = f'{user.idnp}{user.phone}{os.getenv("SECRET_SALT")}'
                 token_hash = hashlib.md5(token_value.encode()).hexdigest()[:9]
                 existing_token.token_value = token_hash
                 existing_token.creation_date = timezone.now()

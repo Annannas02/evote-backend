@@ -30,15 +30,15 @@ def get_user_vote_status(request):
     except Exception as e:
         return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
 
-@api_view(['POST'])
+@api_view(['DELETE'])
 @permission_classes([AllowAny])
 def delete_user_vote(request):
     try:
-        user_id = request.data.get('user_id')
+        person_id = request.data.get('person_id')
         election_id = request.data.get('election_id')
 
         # Ensure the provided user ID is valid
-        user_history_entry = get_object_or_404(models.UserHistory, person_id=user_id, election_id=election_id)
+        user_history_entry = get_object_or_404(models.UserHistory, person_id=person_id, election_id=election_id)
 
         # Delete the UserHistory entry
         user_history_entry.delete()
