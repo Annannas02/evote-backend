@@ -39,7 +39,6 @@ def register_user(request):
         idnp=hashed_idnp,
         phone=phone,
         secret=secret,
-        date_generate_token=None
     )
     user_serialized = UserSerializer(user)
     return Response({"message" : "User created successfully", "user": user_serialized.data}, status=status.HTTP_200_OK)
@@ -166,7 +165,7 @@ def generate_token(request):
         if not existing_token:
             # If no token entry exists, create a new one
             token_value = f"{user.idnp}{user.phone}{SECRET_SALT}"
-            token_hash = hashlib.md5(token_value.encode()).hexdigest()[:6]
+            token_hash = hashlib.md5(token_value.encode()).hexdigest()[:9]
             new_token = Token.objects.create(personid=user, token_value=token_hash, creation_date=timezone.now())
             
             token_serialized = TokenSerializer(new_token)
@@ -177,7 +176,7 @@ def generate_token(request):
             if existing_token.creation_date < thirty_days_ago:
                 # If 30 days have passed, create a new token and update the timestamp
                 token_value = f"{user.idnp}{user.phone}{SECRET_SALT}"
-                token_hash = hashlib.md5(token_value.encode()).hexdigest()[:6]
+                token_hash = hashlib.md5(token_value.encode()).hexdigest()[:9]
                 existing_token.token_value = token_hash
                 existing_token.creation_date = timezone.now()
                 existing_token.save()
