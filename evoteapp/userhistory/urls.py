@@ -1,6 +1,8 @@
 from django.urls import path
-from users import views
+from userhistory import views
 
 urlpatterns = [
-    path('', views.UserList.as_view()),
+    path('', views.UserHistoryList.as_view()),
+    path('vote/status-test', views.delete_user_vote),
+    path('vote/status', views.get_user_vote_status),
 ]

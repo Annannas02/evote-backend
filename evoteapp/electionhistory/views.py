@@ -1,13 +1,11 @@
 from rest_framework import generics
 from elections import models as electionmodels
 from electionchoice import models as electionchoicemodel
-from tokens import models as tokenmodels
-from users import models as usermodels
 from userhistory import models as userhistorymodel
 from electionhistory import models, serializers
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.response import Response
-from rest_framework.permissions import AllowAny, IsAuthenticated
+from rest_framework.permissions import IsAuthenticated
 from django.shortcuts import get_object_or_404
 from rest_framework import status
 from django.utils import timezone
@@ -16,9 +14,6 @@ class ElectionHistoryList(generics.RetrieveUpdateDestroyAPIView):
 
     queryset = models.ElectionHistory.objects.all()
     serializer_class = serializers.ElectionHistorySerializer
-
-
-#TODO: REWORK THESE 2 ENDPOINTS
 
 @api_view(['POST'])
 @permission_classes([IsAuthenticated])
@@ -62,22 +57,4 @@ def vote(request):
     except Exception as e:
         return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
-
-@api_view(['POST'])
-@permission_classes([AllowAny])
-def delete_user_vote(request):
-    try:
-        user_id = request.data.get('user_id')
-        election_id = request.data.get('election_id')
-
-        # Ensure the provided user ID is valid
-        user_history_entry = get_object_or_404(userhistorymodel.UserHistory, personid=user_id, electionid=election_id)
-
-        # Delete the UserHistory entry
-        user_history_entry.delete()
-
-        return Response({"message": "User vote entry deleted successfully."}, status=status.HTTP_200_OK)
-
-    except Exception as e:
-        return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
 
