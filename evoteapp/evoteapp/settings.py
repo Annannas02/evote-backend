@@ -48,6 +48,7 @@ INSTALLED_APPS = [
     'electionchoice',
     'electionhistory',
     'otp',
+    'userhistory',
     'rest_framework_simplejwt',
 ]
 

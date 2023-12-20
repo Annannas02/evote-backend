@@ -1,4 +1,5 @@
 from django.contrib.auth import hashers
+from django.shortcuts import get_object_or_404
 from rest_framework import generics, status, response
 from rest_framework.decorators import api_view, authentication_classes, permission_classes
 from django.utils import timezone
@@ -24,6 +25,7 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
+#USER REGISTRATION
 @api_view(['POST'])
 @permission_classes([AllowAny])
 def register_user(request):
@@ -151,63 +153,76 @@ def authenticate_2fa(request):
 @permission_classes([IsAuthenticated])
 def generate_token(request):
     try:
-        user = usermodels.User.objects.get(id=request.data.get("id"))
+        user = get_object_or_404(usermodels.User, id=request.data.get("id"))
         if request.user != user:
             return Response(
                 {"error": "Unauthorized"},
                 status=status.HTTP_401_UNAUTHORIZED
             )
-        
 
-        # Generate the token value as a concatenation of idnp, phone, and a secret salt
-        token_value = f"{user.idnp}{user.phone}{SECRET_SALT}"
+        # Check if the user has a token entry
+        existing_token = Token.objects.filter(personid=user).first()
 
-        # Calculate the MD5 hash of the token value
-        token_hash = hashlib.md5(token_value.encode()).hexdigest()[:9]
+        if not existing_token:
+            # If no token entry exists, create a new one
+            token_value = f"{user.idnp}{user.phone}{SECRET_SALT}"
+            token_hash = hashlib.md5(token_value.encode()).hexdigest()[:6]
+            new_token = Token.objects.create(personid=user, token_value=token_hash, creation_date=timezone.now())
+            
+            token_serialized = TokenSerializer(new_token)
+            return Response({"message": "Token generated successfully.", "token": token_serialized.data}, status=status.HTTP_200_OK)
+        else:
+            # If a token entry exists, check the timestamp
+            thirty_days_ago = timezone.now() - timedelta(days=30)
+            if existing_token.creation_date < thirty_days_ago:
+                # If 30 days have passed, create a new token and update the timestamp
+                token_value = f"{user.idnp}{user.phone}{SECRET_SALT}"
+                token_hash = hashlib.md5(token_value.encode()).hexdigest()[:6]
+                existing_token.token_value = token_hash
+                existing_token.creation_date = timezone.now()
+                existing_token.save()
 
-        # Check if a token with the same value already exists
-        existing_token = Token.objects.filter(token_value=token_hash).first()
+                token_serialized = TokenSerializer(existing_token)
+                return Response({"message": "Token generated successfully.", "token": token_serialized.data}, status=status.HTTP_200_OK)
+            else:
+                # If less than 30 days have passed, deny the request
+                return Response(
+                    {"error": "Token already exists and not expired."},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
 
-        if user.got_token or existing_token:
-            return Response(
-                {"error": "Token already exists."},
-                status=status.HTTP_400_BAD_REQUEST
-            )
-
-        # Create or update the user's record to mark that they have received a token
-        usermodels.User.objects.filter(pk=user.pk).update(got_token=True, date_generate_token=timezone.now())
-
-        # Create a new token entry in the Token table
-        new_token = Token.objects.create(personid=user, token_value=token_hash, voted=False, date_voted=None)
-
-        token_serialized = TokenSerializer(new_token)
-        return Response({"message": "Token generated successfully.", "token" : token_serialized.data}, status=status.HTTP_200_OK)
-    
     except Exception as e:
         return Response(
             {"error": str(e)},
-            status=status.HTTP_400_BAD_REQUEST        
+            status=status.HTTP_400_BAD_REQUEST
         )
+    
 
+#USER TOKEN VERIFICATION
 @api_view(['POST'])
 @permission_classes([AllowAny])
 def verify_token(request):
-
     token = request.data.get("token_value")
     
     try:
-
-            # Check if the user has an associated token in the Token table
+        # Check if the user has an associated token in the Token table
         user_token = Token.objects.filter(token_value=token).first()
-        print(user_token.personid)
 
         if user_token:
-            user = usermodels.User.objects.get(idnp=user_token.personid)
-            user_serialized = UserSerializer(user)
-            return Response({"message": "User token is verified.", "user": user_serialized.data}, status=status.HTTP_200_OK)
+            # Check if the token is not expired (created within the last 30 days)
+            thirty_days_ago = timezone.now() - timedelta(days=30)
+            if user_token.creation_date >= thirty_days_ago:
+                user = user_token.personid
+                user_serialized = UserSerializer(user)
+                return Response({"message": "User token is verified.", "user": user_serialized.data}, status=status.HTTP_200_OK)
+            else:
+                return Response(
+                    {"error": "Token has expired."},
+                    status=status.HTTP_401_UNAUTHORIZED
+                )
         else:
             return Response(
-                {"error": "User token wrong."},
+                {"error": "User token is invalid."},
                 status=status.HTTP_401_UNAUTHORIZED
             )
 
@@ -215,7 +230,6 @@ def verify_token(request):
         return Response(
             {"error": str(e)},
             status=status.HTTP_400_BAD_REQUEST
-            
         )
 
 @api_view(['POST'])
