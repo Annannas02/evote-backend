@@ -15,9 +15,9 @@ class UserHistoryList(generics.RetrieveUpdateDestroyAPIView):
 
 @api_view(['GET'])
 @permission_classes([AllowAny])
-def get_user_vote_status(request):
+def get_user_vote_status(request, person_id):
     try:
-        person_id = request.data.get('person_id')
+        # person_id = request.data.get('person_id')
 
         # Ensure the provided person ID is valid
         user_vote_entries = models.UserHistory.objects.filter(person_id=person_id)
